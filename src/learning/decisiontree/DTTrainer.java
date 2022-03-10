@@ -107,7 +107,8 @@ public class DTTrainer<V,L, F, FV extends Comparable<FV>> {
 	public static <V,L> ArrayList<Duple<V,L>> resample(ArrayList<Duple<V,L>> data) {
 		ArrayList<Duple<V,L>> resampledList = new ArrayList<>();
 		for(int i = 0; i < data.size(); i++){
-			// resampledList.add(data.remove(randomnumber))
+			Random random = new Random();
+			resampledList.add(data.remove(random.nextInt(data.size())));
 		}
 		return resampledList;
 	}
