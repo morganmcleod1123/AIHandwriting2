@@ -3,8 +3,10 @@ package learning.decisiontree;
 import core.Duple;
 import learning.core.Histogram;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Random;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -35,7 +37,13 @@ public class DTTrainer<V,L, F, FV extends Comparable<FV>> {
 	public static <V,L, F, FV  extends Comparable<FV>> ArrayList<Duple<F,FV>>
 	reducedFeatures(ArrayList<Duple<V,L>> data, Function<ArrayList<Duple<V, L>>, ArrayList<Duple<F,FV>>> allFeatures,
 					int targetNumber) {
-		return null;
+		ArrayList<Duple<F, FV>> featureList = allFeatures.apply(data);
+		Collections.shuffle(featureList);
+		ArrayList<Duple<F, FV>> finalFeatures = new ArrayList<>();
+		for(int i = 0; i < targetNumber; i++){
+			finalFeatures.add(featureList.remove(0));
+		}
+		return finalFeatures;
     }
 	
 	public DecisionTree<V,L,F,FV> train() {
@@ -47,25 +55,40 @@ public class DTTrainer<V,L, F, FV extends Comparable<FV>> {
 	}
 	
 	private DecisionTree<V,L,F,FV> train(ArrayList<Duple<V,L>> data) {
-		// TODO: Implement the decision tree learning algorithm
 		if (numLabels(data) == 1) {
-			// TODO: Return a leaf node consisting of the only label in data
-			return null;
+			return new DTLeaf<>(data.remove(0).getSecond());
 		} else {
-			// TODO: Return an interior node.
-			//  If restrictFeatures is false, call allFeatures.apply() to get a complete list
-			//  of features and values, all of which you should cosider when splitting.
-			//  If restrictFeatures is true, call reducedFeatures() to get sqrt(# features)
-			//  of possible features/values as candidates for the split. In either case,
-			//  for each feature/value combination, use the splitOn() function to break the
-			//  data into two parts. Then use gain() on each split to figure out which
-			//  feature/value combination has the highest gain. Use that combination, as
-			//  well as recursively created left and right nodes, to create the new
-			//  interior node.
-			//  Note: It is possible for the split to fail; that is, you can have a split
-			//  in which one branch has zero elements. In this case, return a leaf node
-			//  containing the most popular label in the branch that has elements.
-			return null;
+			ArrayList<Duple<F,FV>> featureList;
+			if(!restrictFeatures){
+				featureList = allFeatures.apply(data);
+			} else {
+				int targetNumber = (int) Math.round(Math.sqrt(data.size()));
+				featureList = reducedFeatures(data, allFeatures, targetNumber);
+			}
+			// Get everything ready for DTInterior call
+			double bestCombo = Double.MIN_VALUE;
+			Duple<ArrayList<Duple<V,L>>,ArrayList<Duple<V,L>>> bestSplit = new Duple<>(new ArrayList<>(),new ArrayList<>());
+			F decisionFeature = null;
+			FV maxFeatureValue = null;
+			for(Duple<F,FV> feature : featureList){
+				Duple<ArrayList<Duple<V,L>>,ArrayList<Duple<V,L>>> splits = splitOn(data, feature.getFirst(),
+						feature.getSecond(), getFeatureValue);
+				if(gain(data, splits.getFirst(), splits.getSecond()) > bestCombo){
+					bestCombo = gain(data, splits.getFirst(), splits.getSecond());
+					bestSplit = splits;
+					decisionFeature = feature.getFirst();
+					maxFeatureValue = feature.getSecond();
+				}
+			}
+			// Return Node or Leaf
+			if(bestSplit.getFirst().size() == 0){
+				return new DTLeaf<>(mostPopularLabelFrom(bestSplit.getSecond()));
+			} else if(bestSplit.getSecond().size() == 0){
+				return new DTLeaf<>(mostPopularLabelFrom(bestSplit.getFirst()));
+			} else {
+				return new DTInterior<>(decisionFeature, maxFeatureValue, train(bestSplit.getFirst()),
+						train(bestSplit.getSecond()), getFeatureValue, successor);
+			}
 		}		
 	}
 
@@ -78,8 +101,15 @@ public class DTTrainer<V,L, F, FV extends Comparable<FV>> {
 	}
 
 	// TODO: Generate a new dataset by sampling randomly with replacement.
+	// Take data ArrayList and randomly select elements from it and put them into a new Arraylist.
+	// The idea of this function is to filter out noise and outliers while giving more importance to
+	// elements that occur often.
 	public static <V,L> ArrayList<Duple<V,L>> resample(ArrayList<Duple<V,L>> data) {
-		return null;
+		ArrayList<Duple<V,L>> resampledList = new ArrayList<>();
+		for(int i = 0; i < data.size(); i++){
+			// resampledList.add(data.remove(randomnumber))
+		}
+		return resampledList;
 	}
 
 	public static <V,L> double getGini(ArrayList<Duple<V,L>> data) {
@@ -88,14 +118,26 @@ public class DTTrainer<V,L, F, FV extends Comparable<FV>> {
 		//  Use of a Histogram<L> for this purpose is recommended.
 		//  Gini coefficient is 1 - sum(for all labels i, p_i^2)
 		//  Should pass DTTest.testGini().
-		return 1.0;
+		Histogram<L> histogram = new Histogram<>();
+		ArrayList<L> uniqueLabels = new ArrayList<>();
+		for(Duple<V,L> point : data){
+			histogram.bump(point.getSecond());
+			if(!uniqueLabels.contains(point.getSecond())){
+				uniqueLabels.add(point.getSecond());
+			}
+		}
+		double piSum = 0;
+		for(L label : uniqueLabels){
+			piSum += Math.pow((histogram.getPortionFor(label)), 2.0) ;
+		}
+		return 1 - piSum;
 	}
 
 	public static <V,L> double gain(ArrayList<Duple<V,L>> parent, ArrayList<Duple<V,L>> child1,
 									ArrayList<Duple<V,L>> child2) {
 		// TODO: Calculate the gain of the split. Add the gini values for the children.
 		//  Subtract that sum from the gini value for the parent. Should pass DTTest.testGain().
-		return 0;
+		return getGini(parent) - (getGini(child1) + getGini(child2));
 	}
 
 	public static <V,L, F, FV  extends Comparable<FV>> Duple<ArrayList<Duple<V,L>>,ArrayList<Duple<V,L>>> splitOn
@@ -106,7 +148,16 @@ public class DTTrainer<V,L, F, FV extends Comparable<FV>> {
 		//  feature has a value less than or equal to featureValue. The second
 		//  returned list should be everything else from this list.
 		//  Should pass DTTest.testSplit().
-
-		return null;
+		ArrayList<Duple<V,L>> firstList = new ArrayList<>();
+		ArrayList<Duple<V,L>> secondList = new ArrayList<>();
+		for(Duple<V,L> point : data){
+			int comparison = getFeatureValue.apply(point.getFirst(), feature).compareTo(featureValue);
+			if(comparison <= 0){
+				firstList.add(point);
+			} else {
+				secondList.add(point);
+			}
+		}
+		return new Duple<>(firstList, secondList);
 	}
 }

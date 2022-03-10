@@ -4,6 +4,7 @@ import core.Duple;
 import learning.core.Updateable;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -27,10 +28,17 @@ public class DTInterior<V, L, F, FV extends Comparable<FV>> implements DecisionT
 
 	@Override
 	public L classify(V v) {
+		// Questions:
+		// How to do value comparison?
 		// TODO: If the targeted decisionFeature is less than or equal to the maxFeatureValue, ask the left subtree.
 		//       Otherwise, ask the right subtree.
 		//       DTTest.testInterior() should pass when this works.
-		return null;
+		int comparison = getFeatureValue.apply(v, decisionFeature).compareTo(maxFeatureValue);
+		if(comparison <= 0){
+			return left.classify(v);
+		} else {
+			return right.classify(v);
+		}
 	}
 
 	@Override

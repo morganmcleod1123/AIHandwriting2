@@ -46,8 +46,9 @@ public class SOMRecognizer<V, L> implements Classifier<V, L> {
     // TODO: Perform a k-nearest-neighbor retrieval to return the label that
     //  best matches the current node.
     public static <V,L> L findLabelFor(V currentNode, int k, ArrayList<Duple<V, L>> allSamples, ToDoubleBiFunction<V, V> distance) {
-        // Your code here
-        return null;
+        Knn<V, L> knn = new Knn<>(k, distance);
+        knn.train(allSamples);
+        return knn.classify(currentNode);
     }
 
     @Override
