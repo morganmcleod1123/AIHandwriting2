@@ -27,9 +27,12 @@ public class RandomForest<V,L, F, FV extends Comparable<FV>> implements Classifi
 
 	@Override
 	public void train(ArrayList<Duple<V, L>> data) {
+		System.out.println(data.size());
 		this.treeRoots = new ArrayList<>();
 		for (int i = 0; i < numTrees; i++) {
-			DTTrainer<V,L, F, FV> trainer = new DTTrainer<>(DTTrainer.resample(data), allFeatures, true,
+			ArrayList<Duple<V,L>> resampleData = DTTrainer.resample(data);
+			System.out.println(resampleData.size());
+			DTTrainer<V,L, F, FV> trainer = new DTTrainer<>(resampleData, allFeatures, true,
 					getFeatureValue, successor);
 			this.treeRoots.add(trainer.train());
 		}

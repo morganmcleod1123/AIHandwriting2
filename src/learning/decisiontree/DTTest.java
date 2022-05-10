@@ -112,4 +112,12 @@ public class DTTest {
             assertTrue(features.contains(feature));
         }
     }
+    @Test
+    public void testResample() {
+        ArrayList<Duple<Drawing,String>> resampled = DTTrainer.resample(dtMain);
+        assertEquals(resampled.size(), dtMain.size());
+        for (Duple<Drawing,String> example: resampled) {
+            assert dtMain.contains(example);
+        }
+    }
 }

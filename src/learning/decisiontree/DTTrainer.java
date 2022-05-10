@@ -47,6 +47,7 @@ public class DTTrainer<V,L, F, FV extends Comparable<FV>> {
     }
 	
 	public DecisionTree<V,L,F,FV> train() {
+		System.out.println(baseData.size());
 		return train(baseData);
 	}
 
@@ -66,7 +67,7 @@ public class DTTrainer<V,L, F, FV extends Comparable<FV>> {
 				featureList = reducedFeatures(data, allFeatures, targetNumber);
 			}
 			// Get everything ready for DTInterior call
-			double bestCombo = Double.MIN_VALUE;
+			double bestCombo = -Double.MAX_VALUE;
 			Duple<ArrayList<Duple<V,L>>,ArrayList<Duple<V,L>>> bestSplit = new Duple<>(new ArrayList<>(),new ArrayList<>());
 			F decisionFeature = null;
 			FV maxFeatureValue = null;
@@ -93,9 +94,11 @@ public class DTTrainer<V,L, F, FV extends Comparable<FV>> {
 	}
 
 	public static <V,L> L mostPopularLabelFrom(ArrayList<Duple<V, L>> data) {
+		assert data.size() > 0;
 		Histogram<L> h = new Histogram<>();
 		for (Duple<V,L> datum: data) {
 			h.bump(datum.getSecond());
+			System.out.println(datum.getSecond());
 		}
 		return h.getPluralityWinner();
 	}
@@ -106,9 +109,10 @@ public class DTTrainer<V,L, F, FV extends Comparable<FV>> {
 	// elements that occur often.
 	public static <V,L> ArrayList<Duple<V,L>> resample(ArrayList<Duple<V,L>> data) {
 		ArrayList<Duple<V,L>> resampledList = new ArrayList<>();
-		for(int i = 0; i < data.size(); i++){
-			Random random = new Random();
-			resampledList.add(data.remove(random.nextInt(data.size())));
+		Random r = new Random();
+		while(resampledList.size() < data.size()){
+			int index = r.nextInt(data.size());
+			resampledList.add(data.get(index));
 		}
 		return resampledList;
 	}
